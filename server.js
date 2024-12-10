@@ -19,6 +19,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+
 // MongoDB connection configuration
 const mongoDBConnectionString = process.env.MONGO_URI;
 const mongoConnectionOptions = {
