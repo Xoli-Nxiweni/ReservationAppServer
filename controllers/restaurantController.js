@@ -8,7 +8,8 @@ export const getAllRestaurants = async (req, res) => {
     const restaurants = await Restaurant.find();
     res.status(200).json(restaurants);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching restaurants' });
+    console.error('Error fetching restaurants:', error.message);
+    res.status(500).json({ message: 'Error fetching restaurants', details: error.message });
   }
 };
 
@@ -21,7 +22,8 @@ export const getRestaurantById = async (req, res) => {
     }
     res.status(200).json(restaurant);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching restaurant' });
+    console.error('Error fetching restaurant:', error.message);
+    res.status(500).json({ message: 'Error fetching restaurant', details: error.message });
   }
 };
 
@@ -46,7 +48,8 @@ export const createRestaurant = async (req, res) => {
     await newRestaurant.save();
     res.status(201).json(newRestaurant);
   } catch (error) {
-    res.status(400).json({ message: 'Error creating restaurant' });
+    console.error('Error creating restaurant:', error.message);
+    res.status(400).json({ message: 'Error creating restaurant', details: error.message });
   }
 };
 
@@ -71,7 +74,8 @@ export const updateRestaurantSlots = async (req, res) => {
 
     res.status(200).json(restaurant);
   } catch (error) {
-    res.status(400).json({ message: 'Error updating available slots' });
+    console.error('Error updating available slots:', error.message);
+    res.status(400).json({ message: 'Error updating available slots', details: error.message });
   }
 };
 
@@ -85,9 +89,10 @@ export const createReservation = async (req, res) => {
       return res.status(404).json({ message: 'Restaurant not found' });
     }
 
-    const slotAvailable = restaurant.availableSlots.some(slot => 
-      slot.date.toDateString() === new Date(date).toDateString() && 
-      slot.times.includes(time)
+    const slotAvailable = restaurant.availableSlots.some(
+      slot =>
+        slot.date.toDateString() === new Date(date).toDateString() &&
+        slot.times.includes(time)
     );
 
     if (!slotAvailable) {
@@ -105,28 +110,42 @@ export const createReservation = async (req, res) => {
     await newReservation.save();
     res.status(201).json(newReservation);
   } catch (error) {
-    res.status(400).json({ message: 'Error creating reservation' });
+    console.error('Error creating reservation:', error.message);
+    res.status(400).json({ message: 'Error creating reservation', details: error.message });
   }
 };
 
 // Get user's reservations
 export const getUserReservations = async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+
   try {
     const reservations = await Reservation.find({ user: req.user.id })
-      .populate('restaurant', 'name location');
-    res.status(200).json(reservations);
+      .populate('restaurant', 'name location')
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const totalReservations = await Reservation.countDocuments({ user: req.user.id });
+
+    res.status(200).json({
+      reservations,
+      totalPages: Math.ceil(totalReservations / limit),
+      currentPage: page
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching reservations' });
+    console.error('Error fetching reservations:', error.message);
+    res.status(500).json({ message: 'Error fetching reservations', details: error.message });
   }
 };
 
-// Cancel a reservation
+// Cancel a reservation (soft delete)
 export const cancelReservation = async (req, res) => {
   try {
-    const reservation = await Reservation.findOneAndDelete({ 
-      _id: req.params.id, 
-      user: req.user.id 
-    });
+    const reservation = await Reservation.findByIdAndUpdate(
+      req.params.id,
+      { status: 'cancelled' }, // Mark as cancelled
+      { new: true }
+    );
 
     if (!reservation) {
       return res.status(404).json({ message: 'Reservation not found' });
@@ -134,7 +153,8 @@ export const cancelReservation = async (req, res) => {
 
     res.status(200).json({ message: 'Reservation cancelled successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Error cancelling reservation' });
+    console.error('Error cancelling reservation:', error.message);
+    res.status(500).json({ message: 'Error cancelling reservation', details: error.message });
   }
 };
 
@@ -159,25 +179,39 @@ export const addReview = async (req, res) => {
     await newReview.save();
 
     const reviews = await Review.find({ restaurant: restaurantId });
-    const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
-    
+    const averageRating =
+      reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+
     restaurant.averageRating = averageRating;
     restaurant.totalReviews = reviews.length;
     await restaurant.save();
 
     res.status(201).json(newReview);
   } catch (error) {
-    res.status(400).json({ message: 'Error creating review' });
+    console.error('Error creating review:', error.message);
+    res.status(400).json({ message: 'Error creating review', details: error.message });
   }
 };
 
 // Get reviews for a restaurant
 export const getReviewsForRestaurant = async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+
   try {
     const reviews = await Review.find({ restaurant: req.params.id })
-      .populate('user', 'fullNames');
-    res.status(200).json(reviews);
+      .populate('user', 'fullNames')
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const totalReviews = await Review.countDocuments({ restaurant: req.params.id });
+
+    res.status(200).json({
+      reviews,
+      totalPages: Math.ceil(totalReviews / limit),
+      currentPage: page
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching reviews' });
+    console.error('Error fetching reviews:', error.message);
+    res.status(500).json({ message: 'Error fetching reviews', details: error.message });
   }
 };
