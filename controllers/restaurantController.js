@@ -1,15 +1,22 @@
 import Restaurant from '../models/Restaurant.js';
 import Reservation from '../models/Reservation.js';
 import Review from '../models/Review.js';
+import authenticateUser from '../middleware/authenticateUser.js';
+import getPagination from '../utils/pagination.js';
+
+// Error handler
+const handleError = (res, error) => {
+  console.error(error.message);
+  res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+};
 
 // Get all restaurants
 export const getAllRestaurants = async (req, res) => {
   try {
     const restaurants = await Restaurant.find();
-    res.status(200).json(restaurants);
+    res.json(restaurants);
   } catch (error) {
-    console.error('Error fetching restaurants:', error.message);
-    res.status(500).json({ message: 'Error fetching restaurants', details: error.message });
+    handleError(res, { message: 'Error fetching restaurants', status: 500 });
   }
 };
 
@@ -18,19 +25,18 @@ export const getRestaurantById = async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.params.id);
     if (!restaurant) {
-      return res.status(404).json({ message: 'Restaurant not found' });
+      throw { message: 'Restaurant not found', status: 404 };
     }
-    res.status(200).json(restaurant);
+    res.json(restaurant);
   } catch (error) {
-    console.error('Error fetching restaurant:', error.message);
-    res.status(500).json({ message: 'Error fetching restaurant', details: error.message });
+    handleError(res, error);
   }
 };
 
 // Create a new restaurant (admin only)
 export const createRestaurant = async (req, res) => {
   if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Unauthorized: Admin access required' });
+    return handleError(res, { message: 'Unauthorized: Admin access required', status: 403 });
   }
 
   const { name, image, location, cuisine, availableSlots, capacity } = req.body;
@@ -42,21 +48,20 @@ export const createRestaurant = async (req, res) => {
       location,
       cuisine,
       availableSlots,
-      capacity
+      capacity,
     });
 
     await newRestaurant.save();
     res.status(201).json(newRestaurant);
   } catch (error) {
-    console.error('Error creating restaurant:', error.message);
-    res.status(400).json({ message: 'Error creating restaurant', details: error.message });
+    handleError(res, { message: 'Error creating restaurant', status: 400 });
   }
 };
 
 // Update restaurant's available slots (restaurant owner only)
 export const updateRestaurantSlots = async (req, res) => {
   if (req.user.role !== 'restaurant') {
-    return res.status(403).json({ message: 'Unauthorized: Restaurant owner access required' });
+    return handleError(res, { message: 'Unauthorized: Restaurant owner access required', status: 403 });
   }
 
   const { availableSlots } = req.body;
@@ -69,34 +74,31 @@ export const updateRestaurantSlots = async (req, res) => {
     );
 
     if (!restaurant) {
-      return res.status(404).json({ message: 'Restaurant not found' });
+      throw { message: 'Restaurant not found', status: 404 };
     }
 
-    res.status(200).json(restaurant);
+    res.json(restaurant);
   } catch (error) {
-    console.error('Error updating available slots:', error.message);
-    res.status(400).json({ message: 'Error updating available slots', details: error.message });
+    handleError(res, error);
   }
 };
 
 // Create a new reservation
 export const createReservation = async (req, res) => {
   const { restaurantId, date, time, guests } = req.body;
-  
+
   try {
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
-      return res.status(404).json({ message: 'Restaurant not found' });
+      throw { message: 'Restaurant not found', status: 404 };
     }
 
-    const slotAvailable = restaurant.availableSlots.some(
-      slot =>
-        slot.date.toDateString() === new Date(date).toDateString() &&
-        slot.times.includes(time)
+    const slot = restaurant.availableSlots.find(
+      slot => slot.date.toDateString() === new Date(date).toDateString() && slot.times.includes(time)
     );
 
-    if (!slotAvailable) {
-      return res.status(400).json({ message: 'Selected time slot is not available' });
+    if (!slot || slot.capacity < guests) {
+      throw { message: 'Selected time slot is not available', status: 400 };
     }
 
     const newReservation = new Reservation({
@@ -104,57 +106,62 @@ export const createReservation = async (req, res) => {
       restaurant: restaurantId,
       date,
       time,
-      guests
+      guests,
     });
 
     await newReservation.save();
+
+    // Update slot capacity
+    await Restaurant.updateOne(
+      { _id: restaurantId, 'availableSlots.date': date, 'availableSlots.times': time },
+      { $inc: { 'availableSlots.$.capacity': -guests } }
+    );
+
     res.status(201).json(newReservation);
   } catch (error) {
-    console.error('Error creating reservation:', error.message);
-    res.status(400).json({ message: 'Error creating reservation', details: error.message });
+    handleError(res, error);
   }
 };
 
-// Get user's reservations
+// Get user's reservations with pagination
 export const getUserReservations = async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
+  const { skip, limit: limitPerPage } = getPagination(page, limit);
 
   try {
     const reservations = await Reservation.find({ user: req.user.id })
       .populate('restaurant', 'name location')
-      .skip((page - 1) * limit)
-      .limit(limit);
+      .skip(skip)
+      .limit(limitPerPage);
 
     const totalReservations = await Reservation.countDocuments({ user: req.user.id });
 
-    res.status(200).json({
+    res.json({
       reservations,
-      totalPages: Math.ceil(totalReservations / limit),
-      currentPage: page
+      totalPages: Math.ceil(totalReservations / limitPerPage),
+      currentPage: page,
     });
   } catch (error) {
-    console.error('Error fetching reservations:', error.message);
-    res.status(500).json({ message: 'Error fetching reservations', details: error.message });
+    handleError(res, { message: 'Error fetching reservations', status: 500 });
   }
 };
 
-// Cancel a reservation (soft delete)
+// Cancel a reservation
 export const cancelReservation = async (req, res) => {
   try {
     const reservation = await Reservation.findByIdAndUpdate(
       req.params.id,
-      { status: 'cancelled' }, // Mark as cancelled
+      { status: 'cancelled' },
       { new: true }
     );
 
     if (!reservation) {
-      return res.status(404).json({ message: 'Reservation not found' });
+      throw { message: 'Reservation not found', status: 404 };
     }
 
-    res.status(200).json({ message: 'Reservation cancelled successfully' });
+    res.json({ message: 'Reservation cancelled successfully' });
   } catch (error) {
-    console.error('Error cancelling reservation:', error.message);
-    res.status(500).json({ message: 'Error cancelling reservation', details: error.message });
+    handleError(res, error);
   }
 };
 
@@ -166,52 +173,57 @@ export const addReview = async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
-      return res.status(404).json({ message: 'Restaurant not found' });
+      throw { message: 'Restaurant not found', status: 404 };
+    }
+
+    const reviewExists = await Review.findOne({ user: req.user.id, restaurant: restaurantId });
+    if (reviewExists) {
+      throw { message: 'You have already reviewed this restaurant', status: 400 };
     }
 
     const newReview = new Review({
       user: req.user.id,
       restaurant: restaurantId,
       rating,
-      comment
+      comment,
     });
 
     await newReview.save();
 
+    // Update restaurant's average rating and review count
     const reviews = await Review.find({ restaurant: restaurantId });
-    const averageRating =
-      reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+    const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
 
-    restaurant.averageRating = averageRating;
-    restaurant.totalReviews = reviews.length;
-    await restaurant.save();
+    await Restaurant.findByIdAndUpdate(restaurantId, {
+      averageRating,
+      totalReviews: reviews.length,
+    });
 
     res.status(201).json(newReview);
   } catch (error) {
-    console.error('Error creating review:', error.message);
-    res.status(400).json({ message: 'Error creating review', details: error.message });
+    handleError(res, error);
   }
 };
 
-// Get reviews for a restaurant
+// Get reviews for a restaurant with pagination
 export const getReviewsForRestaurant = async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
+  const { skip, limit: limitPerPage } = getPagination(page, limit);
 
   try {
     const reviews = await Review.find({ restaurant: req.params.id })
       .populate('user', 'fullNames')
-      .skip((page - 1) * limit)
-      .limit(limit);
+      .skip(skip)
+      .limit(limitPerPage);
 
     const totalReviews = await Review.countDocuments({ restaurant: req.params.id });
 
-    res.status(200).json({
+    res.json({
       reviews,
-      totalPages: Math.ceil(totalReviews / limit),
-      currentPage: page
+      totalPages: Math.ceil(totalReviews / limitPerPage),
+      currentPage: page,
     });
   } catch (error) {
-    console.error('Error fetching reviews:', error.message);
-    res.status(500).json({ message: 'Error fetching reviews', details: error.message });
+    handleError(res, { message: 'Error fetching reviews', status: 500 });
   }
 };
