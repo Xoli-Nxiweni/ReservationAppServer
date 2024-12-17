@@ -41,9 +41,28 @@ app.use((req, res, next) => {
 
 // Start the server
 const PORT = process.env.PORT || 4050;
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+
+console.log("🔄 Server connecting...");
+
+const server = app.listen(PORT, (error) => {
+  if (error) {
+    console.error("❌ Something went wrong with the port:", PORT);
+  } else {
+    console.log(`🚀 Server is running at http://localhost:${PORT}`);
+  }
 });
+
+// Handle uncaught exceptions and unhandled rejections
+process.on("uncaughtException", (err) => {
+  console.error("❗ Uncaught Exception:", err.message);
+  process.exit(1); // Optional: Exit the process if needed
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("⚠️ Unhandled Rejection at:", promise, "reason:", reason);
+  // Optional: Handle the rejection (e.g., log it, shut down gracefully)
+});
+
 
 // Graceful shutdown
 process.on('SIGINT', () => {
