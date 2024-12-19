@@ -4,6 +4,12 @@ import User from '../models/User.js';
 import fs from 'fs';
 import path from 'path';
 
+import cors from 'cors';
+import express from 'express';
+const app = express();
+app.use(cors());
+
+
 // Utility function to validate email format
 const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

@@ -12,6 +12,7 @@ import {
 } from '../controllers/BookingController.js';
 import authenticateUser from '../middleware/authenticateUser.js';
 
+
 const router = express.Router();
 
 // Wrap async route handlers to handle promises correctly

@@ -137,6 +137,11 @@ import {
   updateProfilePicture,
   getProfilePicture,
 } from '../controllers/authController.js';
+import cors from 'cors';
+// import express from 'express';
+const app = express();
+app.use(cors());
+
 
 const router = express.Router();
 

@@ -6,6 +6,10 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import cloudinary from 'cloudinary'
+import cors from 'cors';
+import express from 'express';
+const app = express();
+app.use(cors());
 
 
 // At the top of your restaurantController.js

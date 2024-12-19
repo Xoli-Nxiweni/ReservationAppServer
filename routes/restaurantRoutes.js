@@ -377,6 +377,11 @@ import {
   uploadImage, // Import the uploadImage controller
 } from '../controllers/restaurantController.js';
 import authenticateUser from '../middleware/authenticateUser.js';
+import cors from 'cors';
+// import express from 'express';
+const app = express();
+app.use(cors());
+
 
 const router = express.Router();
 
@@ -400,7 +405,7 @@ router.post('/upload', upload, (req, res) => {
   }
 
   console.log('Received file:', req.file);
-  res.json({ url: `http://example.com/uploads/${req.file.filename}` });
+  res.json({ url: `http:///localhost:4050/uploads/${req.file.filename}` });
 });
 
 

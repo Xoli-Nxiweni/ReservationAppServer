@@ -3,6 +3,7 @@ import Restaurant from '../models/Restaurant.js';
 import handleError from '../utils/errorHandler.js';
 import getPagination from '../utils/pagination.js';
 
+
 // Utility function to validate booking availability
 const validateBookingAvailability = async (restaurantId, date, time, guests) => {
   const restaurant = await Restaurant.findById(restaurantId);

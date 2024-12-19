@@ -6,6 +6,11 @@ import {
   getAllPayments,
 } from '../controllers/paymentController.js';
 import authenticateUser from '../middleware/authenticateUser.js';
+import cors from 'cors';
+// import express from 'express';
+const app = express();
+app.use(cors());
+
 
 const router = express.Router();
 

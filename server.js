@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes.js';
 import restaurantRoutes from './routes/restaurantRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
+import multer from 'multer';
 
 
 // Load environment variables
@@ -38,6 +39,31 @@ app.use('/auth', authRoutes);
 app.use('/restaurants', restaurantRoutes);
 app.use('/bookings', bookingRoutes)
 app.use('/payment', paymentRoutes);
+
+
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Directory to store uploaded files
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname); // Unique filename
+  },
+});
+
+const upload = multer({ storage }).single('image'); // Ensure 'image' matches the client-side field name
+
+// Upload route
+app.post('/upload', upload, (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  console.log('Received file:', req.file);
+  res.json({ url: `http://example.com/uploads/${req.file.filename}` });
+});
+
 
 
 // 404 handler for undefined routes

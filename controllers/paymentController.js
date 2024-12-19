@@ -2,6 +2,7 @@ import Payment from '../models/Payment.js';
 import Booking from '../models/Booking.js';
 import Restaurant from '../models/Restaurant.js';
 
+
 // Error handler
 const handleError = (res, error) => {
   console.error(error.message);
