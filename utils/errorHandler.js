@@ -1,19 +1,54 @@
 import jwt from 'jsonwebtoken';
 
-// Middleware to verify JWT
+// Authentication middleware
 export const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Unauthorized' });
+  if (token == null) {
+    return res.status(401).json({ error: 'No token provided' });
   }
 
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Attach decoded user data to the request
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+    req.user = user;
     next();
-  } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
-  }
+  });
+};
+
+// Authorization middleware
+export const authorizeRoles = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Unauthorized access' });
+    }
+
+    next();
+  };
+};
+
+// Error handling utility
+export const handleError = (res, error) => {
+  console.error('Error:', error);
+
+  const statusCode = error.status || 500;
+  const message = error.message || 'An unexpected error occurred';
+  
+  res.status(statusCode).json({
+    error: true,
+    message: message,
+    ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+  });
+};
+
+export default {
+  authenticateToken,
+  authorizeRoles,
+  handleError
 };

@@ -5,4 +5,4 @@ const getPagination = (page, limit) => {
     return { skip, limit: limitPerPage };
   };
   
-export default getPagination
+export default getPagination;

@@ -4,6 +4,9 @@ import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import restaurantRoutes from './routes/restaurantRoutes.js';
+import bookingRoutes from './routes/bookingRoutes.js'
+import paymentRoutes from './routes/paymentRoutes.js'
+
 
 // Load environment variables
 dotenv.config();
@@ -33,6 +36,9 @@ connectDB().catch(err => {
 // Routes
 app.use('/auth', authRoutes);
 app.use('/restaurants', restaurantRoutes);
+app.use('/bookings', bookingRoutes)
+app.use('/payment', paymentRoutes);
+
 
 // 404 handler for undefined routes
 app.use((req, res, next) => {
