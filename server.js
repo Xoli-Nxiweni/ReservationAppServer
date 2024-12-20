@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes.js';
 import restaurantRoutes from './routes/restaurantRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
+import notificationsRoutes from './routes/notificationsRoutes.js'
 import multer from 'multer';
 
 
@@ -39,6 +40,7 @@ app.use('/auth', authRoutes);
 app.use('/restaurants', restaurantRoutes);
 app.use('/bookings', bookingRoutes)
 app.use('/payment', paymentRoutes);
+app.use('/notifications', notificationsRoutes);
 
 
 
