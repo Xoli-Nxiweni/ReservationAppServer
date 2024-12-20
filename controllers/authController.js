@@ -247,6 +247,45 @@ export const getProfile = async (req, res) => {
   }
 };
 
+export const getAllProfiles = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query; // Extract pagination parameters
+    const skip = (page - 1) * limit; // Calculate the number of documents to skip
+
+    // Fetch users with pagination
+    const users = await User.find()
+      .select('-password') // Exclude the password field for security
+      .skip(skip)
+      .limit(parseInt(limit))
+      .sort('fullNames'); // Sort by fullNames (or any other field you prefer)
+
+    // Get the total number of users
+    const totalUsers = await User.countDocuments();
+
+    res.status(200).json({
+      users,
+      totalPages: Math.ceil(totalUsers / limit),
+      currentPage: parseInt(page),
+    });
+  } catch (error) {
+    console.error('Error fetching all profiles:', error);
+    res.status(500).json({ message: 'Internal server error', details: error.message });
+  }
+};
+export const getAllTotalProfiles = async (req, res) => {
+  try {
+    // Get the total number of users
+    const totalUsers = await User.countDocuments();
+
+    res.status(200).json({
+      totalUsers,
+    });
+  } catch (error) {
+    console.error('Error fetching total profiles:', error);
+    res.status(500).json({ message: 'Internal server error', details: error.message });
+  }
+};
+
 // Update user profile
 export const updateUserProfile = async (req, res) => {
   const { email, fullNames, phone, address, password } = req.body;

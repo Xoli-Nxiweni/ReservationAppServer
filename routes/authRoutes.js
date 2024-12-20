@@ -136,6 +136,8 @@ import {
   updateUserProfile,
   updateProfilePicture,
   getProfilePicture,
+  getAllProfiles,
+  getAllTotalProfiles
 } from '../controllers/authController.js';
 import cors from 'cors';
 // import express from 'express';
@@ -180,6 +182,10 @@ router.post('/login', loginUser);
 
 // Get user profile endpoint
 router.get('/profile', authMiddleware, getProfile);
+
+router.get('/all-profiles', authMiddleware, getAllProfiles);
+
+router.get('/total-profiles', authMiddleware, getAllTotalProfiles);
 
 // Update user profile endpoint
 router.put('/profile', authMiddleware, updateUserProfile);
