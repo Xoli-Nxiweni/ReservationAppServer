@@ -130,6 +130,74 @@ export const createRestaurant = async (req, res) => {
   }
 };
 
+// Update a restaurant by ID (admin only)
+export const updateRestaurant = async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return handleError(res, { message: 'Unauthorized: Admin access required', status: 403 });
+  }
+
+  const { id } = req.params;
+  const { name, location, cuisine, capacity, price, description, phone, email, coordinates } = req.body;
+
+  try {
+    // Find the restaurant by ID
+    const restaurant = await Restaurant.findById(id);
+    if (!restaurant) {
+      throw { message: 'Restaurant not found', status: 404 };
+    }
+
+    // Update the restaurant details
+    const updatedRestaurant = await Restaurant.findByIdAndUpdate(
+      id,
+      {
+        name,
+        location,
+        cuisine,
+        capacity,
+        price,
+        description,
+        phone,
+        email,
+        coordinates,
+        image: req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : restaurant.image,
+      },
+      { new: true } // Return the updated document
+    );
+
+    res.json(updatedRestaurant);
+  } catch (error) {
+    handleError(res, error);
+  }
+};
+
+// Delete a restaurant by ID (admin only)
+export const deleteRestaurant = async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return handleError(res, { message: 'Unauthorized: Admin access required', status: 403 });
+  }
+
+  const { id } = req.params;
+
+  try {
+    // Find the restaurant by ID
+    const restaurant = await Restaurant.findById(id);
+    if (!restaurant) {
+      throw { message: 'Restaurant not found', status: 404 };
+    }
+
+    // Delete the restaurant
+    await Restaurant.findByIdAndDelete(id);
+
+    // Optionally, delete associated reservations and reviews
+    await Reservation.deleteMany({ restaurant: id });
+    await Review.deleteMany({ restaurant: id });
+
+    res.json({ message: 'Restaurant deleted successfully' });
+  } catch (error) {
+    handleError(res, error);
+  }
+};
+
 // Add this function in the restaurantController.js file, right after the multer configuration
 // and before getAllRestaurants
 

@@ -374,6 +374,7 @@ import {
   cancelReservation,
   addReview,
   getReviewsForRestaurant,
+  deleteRestaurant,
   uploadImage, // Import the uploadImage controller
 } from '../controllers/restaurantController.js';
 import authenticateUser from '../middleware/authenticateUser.js';
@@ -427,6 +428,9 @@ router.get('/:id/reviews', getReviewsForRestaurant);
 // Create a new restaurant (admin only)
 router.post('/', authenticateUser, createRestaurant);
 
+//delete restaurant
+router.delete('/:id', authenticateUser, deleteRestaurant)
+
 // Update restaurant's available slots (restaurant owner only)
 // router.put('/:id/slots', authenticateUser, updateRestaurantSlots);
 
@@ -438,6 +442,7 @@ router.get('/reservations', authenticateUser, getUserReservations);
 
 // Cancel a reservation (soft delete)
 router.put('/reservations/:id/cancel', authenticateUser, cancelReservation);
+
 
 // Add a review for a restaurant
 router.post('/:id/reviews', authenticateUser, addReview);
