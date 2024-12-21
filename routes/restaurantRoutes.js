@@ -375,7 +375,8 @@ import {
   addReview,
   getReviewsForRestaurant,
   deleteRestaurant,
-  uploadImage, // Import the uploadImage controller
+  uploadImage,
+  updateRestaurant, // Import the uploadImage controller
 } from '../controllers/restaurantController.js';
 import authenticateUser from '../middleware/authenticateUser.js';
 import cors from 'cors';
@@ -427,6 +428,9 @@ router.get('/:id/reviews', getReviewsForRestaurant);
 
 // Create a new restaurant (admin only)
 router.post('/', authenticateUser, createRestaurant);
+
+// Create a new restaurant (admin only)
+router.put('/:id', authenticateUser, updateRestaurant);
 
 //delete restaurant
 router.delete('/:id', authenticateUser, deleteRestaurant)
