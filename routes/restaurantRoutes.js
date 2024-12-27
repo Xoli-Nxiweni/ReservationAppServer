@@ -374,6 +374,7 @@ import {
   cancelReservation,
   addReview,
   getReviewsForRestaurant,
+  restaurantReservations,
   deleteRestaurant,
   uploadImage,
   updateRestaurant, // Import the uploadImage controller
@@ -442,7 +443,11 @@ router.delete('/:id', authenticateUser, deleteRestaurant)
 router.post('/reservations', authenticateUser, createReservation);
 
 // Get user's reservations
-router.get('/reservations', authenticateUser, getUserReservations);
+router.get('/reservations/:id', authenticateUser, getUserReservations);
+
+//get all reservations associated with a certain restaurant
+router.get('/admin/reservations/:id', authenticateUser, restaurantReservations);
+
 
 // Cancel a reservation (soft delete)
 router.put('/reservations/:id/cancel', authenticateUser, cancelReservation);

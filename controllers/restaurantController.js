@@ -435,3 +435,26 @@ export const getReviewsForRestaurant = async (req, res) => {
     handleError(res, { message: 'Error fetching reviews', status: 500 });
   }
 };
+
+export const restaurantReservations = async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+  const { skip, limit: limitPerPage } = getPagination(page, limit);
+
+  try {
+    const reservations = await Reservation.find({ restaurant: req.params.id })
+      .populate('user', 'fullName')
+      .skip(skip)
+      .limit(limitPerPage)
+      .sort('-date');
+
+    const total = await Reservation.countDocuments({ restaurant: req.params.id });
+
+    res.json({
+      reservations,
+      totalPages: Math.ceil(total / limitPerPage),
+      currentPage: parseInt(page)
+    });
+  } catch (error) {
+    handleError(res, { message: 'Error fetching reservations', status: 500 });
+  }
+}
