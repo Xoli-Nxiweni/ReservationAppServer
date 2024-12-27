@@ -10,6 +10,8 @@ import notificationsRoutes from './routes/notificationsRoutes.js'
 import multer from 'multer';
 
 
+
+
 // Load environment variables
 dotenv.config();
 
@@ -18,7 +20,8 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+// app.use(cors());
+app.use(cors({ origin: '*' }));
 
 // Global error handler middleware
 app.use((err, req, res, next) => {
@@ -41,6 +44,7 @@ app.use('/restaurants', restaurantRoutes);
 app.use('/bookings', bookingRoutes)
 app.use('/payment', paymentRoutes);
 app.use('/notifications', notificationsRoutes);
+// Add this route to your existing routes
 
 
 

@@ -4,6 +4,7 @@ import {
   getUserPayments,
   getPaymentById,
   getAllPayments,
+  deleteAdminPayment,
 } from '../controllers/paymentController.js';
 import authenticateUser from '../middleware/authenticateUser.js';
 import cors from 'cors';
@@ -21,5 +22,6 @@ router.get('/pay/:id', authenticateUser, getPaymentById);
 
 // Admin Routes
 router.get('/admin/payments', authenticateUser, getAllPayments);
+router.delete('/admin/payments/:id', authenticateUser, deleteAdminPayment);
 
 export default router;

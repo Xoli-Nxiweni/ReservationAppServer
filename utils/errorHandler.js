@@ -34,7 +34,7 @@ export const authorizeRoles = (...roles) => {
 };
 
 // Error handling utility
-export const handleError = (res, error) => {
+const handleError = (res, error) => {
   console.error('Error:', error);
 
   const statusCode = error.status || 500;
